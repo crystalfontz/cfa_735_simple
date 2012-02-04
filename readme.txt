@@ -8,6 +8,8 @@ that make up the CFA-735 module.
 Additional modules can be purchased from:
 http://www.crystalfontz.com/search.php?q=CFA735
 
+Support can be found through our forums:
+http://forum.crystalfontz.com/forumdisplay.php?37-CFA-735-User-Code
 
 License
 -------
