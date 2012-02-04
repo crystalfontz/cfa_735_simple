@@ -1,0 +1,4 @@
+-d"./settings/stm32l1xx_md_offset.lsl"
+--optimize=0
+--map-file-format=2
+$(LinkObjects)

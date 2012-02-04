@@ -1,0 +1,4 @@
+
+<Project Header="Project 'AudioSpeaker'" Path=".\AudioSpeaker.rprj" Project="Yes" OutputFile="" sate="96" ActiveApp="AudioSpeaker" AsyncBuild="" >
+	<ApplicationBuild Header="AudioSpeaker" Extern=".\AudioSpeaker.rapp" Path=".\AudioSpeaker.rapp" OutputFile=".\STM32L152-EVAL\AudioSpeaker.elf" Config="STM32L152-EVAL" sate="96" AsyncBuild="" />
+</Project>

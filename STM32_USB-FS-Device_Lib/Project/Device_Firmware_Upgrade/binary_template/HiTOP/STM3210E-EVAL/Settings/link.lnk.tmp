@@ -1,0 +1,13 @@
+-d"./settings/STM32F10x_hd_offset.lsl"
+--optimize=0
+--map-file-format=2
+.\objects\core_cm3.obj
+.\objects\system_stm32f10x.obj
+.\objects\misc.obj
+.\objects\stm32f10x_exti.obj
+.\objects\stm32f10x_gpio.obj
+.\objects\stm32f10x_rcc.obj
+.\objects\stm32f10x_usart.obj
+.\objects\main.obj
+.\objects\stm32f10x_it.obj
+.\objects\stm32_eval.obj

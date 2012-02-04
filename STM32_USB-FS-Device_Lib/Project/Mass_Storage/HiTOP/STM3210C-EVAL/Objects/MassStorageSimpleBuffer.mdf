@@ -1,0 +1,8 @@
+# space <name> <id> <mau size>
+space	ARM:ARM:linear	1	8
+# chip <name> <id> <mau size> <size> <type>
+chip	stm32f103ram	1	8	65536	ram
+chip	stm32f103flash	0	8	262144	rom
+# map <space id> <start in space> <size in space> <chip id> <start on chip>
+map	1	134217728	262144	0	0
+map	1	536870912	65536	1	0

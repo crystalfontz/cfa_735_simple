@@ -1,0 +1,4 @@
+
+<Project Header="Project 'VirtualCOMPort'" Path=".\VirtualCOMPort.rprj" Project="Yes" OutputFile="" sate="96" ActiveApp="VirtualCOMPort" AsyncBuild="" >
+	<ApplicationBuild Header="VirtualCOMPort" Extern=".\VirtualCOMPort.rapp" Path=".\VirtualCOMPort.rapp" OutputFile=".\STM32L152-EVAL\VirtualCOMPort.elf" Config="STM32L152-EVAL" sate="98" AsyncBuild="" />
+</Project>

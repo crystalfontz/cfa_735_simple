@@ -1,0 +1,167 @@
+/*
+ * Description:
+ *
+ * Linker subscript for embedded section definitions and code layout
+ *
+ * License:
+ *
+ * Copyright 2012 Crystalfontz America, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * Default stack sizes.
+ *
+ * These are used by the startup in order to allocate minimum stacks for the different modes.
+ */
+__Stack_Size = 1024 ;
+
+PROVIDE ( _Stack_Size = __Stack_Size ) ;
+
+__Stack_Init = _estack  - __Stack_Size ;
+
+/* "PROVIDE" allows to easily override these values from an object file or the commmand line. */
+PROVIDE ( _Stack_Init = __Stack_Init ) ;
+
+/*
+ * There will be a link error if there is not this amount of RAM free at the end.
+ */
+_Minimum_Stack_Size = 0x100 ;
+
+/* higher address of the user mode stack */
+_estack = ORIGIN(RAM) + LENGTH(RAM);
+
+/* include the SECTIONS management sub-script for FLASH mode */
+
+/* Sections Definitions */
+
+SECTIONS
+{
+    /* for Cortex devices, the beginning of the startup code is stored in the .isr_vector section, which goes to FLASH */
+    .isr_vector :
+    {
+	. = ALIGN(4);
+        KEEP(*(.isr_vector))            /* Startup code */
+	. = ALIGN(4);
+    } >FLASH
+
+    /* the program code is stored in the .text section, which goes to Flash */
+    .text :
+    {
+        . = ALIGN(4);
+
+        *(.text)                   /* remaining code */
+        *(.text.*)                 /* remaining code */
+        *(.rodata)                 /* read-only data (constants) */
+        *(.rodata.*)               /* read-only data (constants) */
+        *(.glue_7)
+        *(.glue_7t)
+        *(.vfp11_veneer)
+        *(.gcc_except_table)
+
+        . = ALIGN(4);
+        /* These  are for static initializers, constructors, and destructors */
+        KEEP(*(.init))
+        KEEP(*(.fini))
+        PROVIDE_HIDDEN (__preinit_array_start = .);
+        KEEP (*(.preinit_array))
+        PROVIDE_HIDDEN (__preinit_array_end = .);
+        PROVIDE_HIDDEN (__init_array_start = .);
+        KEEP (*(SORT(.init_array.*)))
+        KEEP (*(.init_array))
+        PROVIDE_HIDDEN (__init_array_end = .);
+        PROVIDE_HIDDEN (__fini_array_start = .);
+        KEEP (*(.fini_array))
+        KEEP (*(SORT(.fini_array.*)))
+        PROVIDE_HIDDEN (__fini_array_end = .);
+    } >FLASH
+
+
+    /* for exception handling/unwind - some Newlib functions (in common with C++ and STDC++) use this. */
+
+    .ARM.extab :
+    {
+        *(.ARM.extab* .gnu.linkonce.armextab.*)
+
+    } > FLASH
+
+    .ARM.exidx :
+    {
+        __exidx_start = .;
+        *(.ARM.exidx* .gnu.linkonce.armexidx.*)
+        __exidx_end = .;
+    } > FLASH
+
+    . = ALIGN(4);
+     _etext = .;
+    /* This is used by the startup in order to initialize the .data secion */
+    _sidata = _etext;
+
+    /*
+     * This is the initialized data section.
+     * The program executes knowing that the data is in the RAM
+     * but requires the loader to put the initial values in the FLASH
+     * so on each boot the startup can copy the initial values from FLASH
+     * to RAM.
+     */
+
+    .data : AT ( _sidata ) 
+    {
+        . = ALIGN(4);
+        /* This is used by the startup in order to initialize the .data  and .init_array secions */
+        _sdata = .;
+
+        *(.data)
+        *(.data.*)
+
+        . = ALIGN(4);
+        /* This is used by the startup in order to initialize the .data and .init_array secions */
+        _edata = . ;
+
+    } >RAM
+
+    /* This is the uninitialized data section */
+    .bss :
+    {
+	. = ALIGN(4);
+        /* This is used by the startup in order to initialize the .bss secion */
+        _sbss = .;
+        __bss_start__ = .;
+
+        *(.bss)
+        *(.bss.*)
+        *(COMMON)
+
+        . = ALIGN(4);
+	/* This is used by the startup in order to initialize the .bss secion */
+   	_ebss = . ;
+        __bss_end__ = .;
+    } >RAM
+
+    PROVIDE ( end = _ebss );
+    PROVIDE ( _end = _ebss );
+    PROVIDE ( heap_limit = ORIGIN(RAM) + LENGTH(RAM) );
+
+    /* The user stack section and a short memory requirement check, */
+    ._usrstack :
+    {
+        . = ALIGN(4);
+        _susrstack = . ;
+
+        . = . + _Minimum_Stack_Size ;
+
+	. = ALIGN(4);
+        _eusrstack = . ;
+    } >RAM
+}
