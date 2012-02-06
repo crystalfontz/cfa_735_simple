@@ -1,12 +1,12 @@
 This setup was performed on an x64 install of Ubuntu 10.04 LTS.  We
 have had development done on the CFA-735 on various versions of
-Fedora, Unbuntu, and Apple OS X.
+Fedora, Ubuntu, and Apple OS X.
 
 This walks through the steps needed to create a working directory for
-the cfa_735_simple user development and get the developement tools set
+the cfa_735_simple user development and get the development tools set
 up.
 
-Create a directory to contrain your repository and tools.
+Create a directory to contain your repository and tools.
 
 $ mkdir cfa_735_development
 $ cd cfa_735_development
@@ -25,7 +25,7 @@ Clone the cfa_735_simple repository.
 
 $ git clone git://github.com/crystalfontz/cfa_735_simple.git
 
-Change to the respoitory's src directory in order to build.
+Change to the repository's src directory in order to build.
 
 $ cd cfa_735_simple/src
 
@@ -75,7 +75,7 @@ $ sudo apt-get install libftdi-dev
 Build the autotools scripts for openocd in order to compile it for
 your platform.  Configure and then build for your platform.
 Configuring the build enables use of libftdi and sets the install
-directory.  We wanr the install in a directory call ocd under
+directory.  We want the install in a directory call "ocd" under
 cfa_735_development (parallel to the openocd source).
 
 $ ./bootstrap

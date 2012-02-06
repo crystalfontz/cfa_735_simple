@@ -56,7 +56,7 @@ cortex_m3 interrupt mask on
 Continue
 --------
 
-Continure will resume the program in the debugger until a breakpoint
+Continue will resume the program in the debugger until a breakpoint
 if hit or another break condition is met.  "continue", "cont", or even
 "c" can be used to continue.
 
@@ -93,7 +93,7 @@ Loading new code
 
 While the debugger and processor are halted you can use the load
 command to reprogram the flash in the chip.  This is easier if you are
-dubugging and testing changes than using the OpenOCD letnet interface.
+debugging and testing changes than using the OpenOCD telnet interface.
 
 (gdb) load
 Loading section .isr_vector, size 0x1e4 lma 0x8000000

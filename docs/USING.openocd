@@ -6,7 +6,7 @@ Telnet
 ------
 
 Usually the telnet console is accessed by the telnet command
-sepecifying the localhost and port 4444.  The OpenOCD will reply with
+specifying the localhost and port 4444.  The OpenOCD will reply with
 a prompt.
 
 $ telnet localhost 4444
@@ -96,7 +96,7 @@ xPSR: 0x81000000 pc: 0x1ffff3ca msp: 0x200000c4
 STM32 Unlock
 ------------
 
-CFA-735 modules come from Crystalfontz with the propriatery code
+CFA-735 modules come from Crystalfontz with the proprietery code
 protected by the STM32's read only protection (ROP).  In order to use
 your own code, the ROP must be disabled.  Disabling ROP will trigger a
 mass-erase of the STM32.  After unlocking, you can do a "reset init"
@@ -111,7 +111,7 @@ Flash Write Image
 -----------------
 
 Flash Write Image loads code into the flash of the STM32.  Commonly it
-is used with the "erase" parameter to automattically erase the needed
+is used with the "erase" parameter to automatically erase the needed
 pages before programming.  This can only be done after the device has
 been unlocked.
 
