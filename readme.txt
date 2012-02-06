@@ -51,6 +51,7 @@ http://openocd.sourceforge.net/getting-openocd/
 
 Known working JTAG interfaces:
 http://www.olimex.com/dev/arm-usb-ocd.html
+http://www.amontec.com/jtagkey.shtml
 
 JTAG Interface
 --------------

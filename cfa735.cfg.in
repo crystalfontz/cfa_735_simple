@@ -1,3 +1,2 @@
-source [find interface/olimex-arm-usb-ocd.cfg]
 set WORKAREASIZE 0x5000
 source [find target/stm32.cfg]
