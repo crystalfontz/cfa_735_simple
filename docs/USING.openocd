@@ -1,0 +1,121 @@
+OpenOCD is the Open On Chip Debugger.  The STM32F103 microcontroller
+contains and on-chip debugger.  Using the JTAG interface and OpenOCD
+we can interface with it in order to debug code on the chip.
+
+Telnet
+------
+
+Usually the telnet console is accessed by the telnet command
+sepecifying the localhost and port 4444.  The OpenOCD will reply with
+a prompt.
+
+$ telnet localhost 4444
+Trying ::1...
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+Open On-Chip Debugger
+> 
+
+
+Quit Start Steps for Unlocking and Loading
+------------------------------------------
+> halt
+> stm32x unlock 0
+> reset init
+> flash write_image erase src/cfa735.elf
+> reset
+
+
+Help
+----
+
+The complete commands can be listed with the help command.
+
+
+> help
+add_help_text command_name helptext_string
+      Add new command help text; Command can be multiple tokens. (command
+      valid any time)
+add_usage_text command_name usage_string
+      Add new command usage text; command can be multiple tokens. (command
+      valid any time)
+.....
+
+
+You can get help on a specific command or commands with the passed in word.
+
+> help reset
+  jtag arp_init-reset
+        Uses TRST and SRST to try resetting everything on the JTAG scan
+        chain, then performs 'jtag arp_init'. (command valid any time)
+jtag_reset trst_active srst_active
+      Set reset line values.  Value '1' is active, value '0' is inactive.
+power_restore
+      Overridable procedure run when power restore is detected. Runs 'reset
+      init' by default. (command valid any time)
+reset [run|halt|init]
+      Reset all targets into the specified mode.Default reset mode is run,
+      if not given.
+.....
+
+
+Reset
+-----
+
+Commonly you will need to reset the microcontroller.  You can use the
+reset command with the parameter init to reset the microcontroller and
+halt it before running the reset vector.
+
+> reset init
+JTAG tap: stm32.cpu tap/device found: 0x3ba00477 (mfg: 0x23b, part: 0xba00, ver: 0x3)
+JTAG tap: stm32.bs tap/device found: 0x06414041 (mfg: 0x020, part: 0x6414, ver: 0x0)
+target state: halted
+target halted due to debug-request, current mode: Thread 
+xPSR: 0x01000000 pc: 0x08000008 msp: 0x2000c000
+
+Reset with no parameters, resets the chip and starts running.
+
+> reset
+JTAG tap: stm32.cpu tap/device found: 0x3ba00477 (mfg: 0x23b, part: 0xba00, ver: 0x3)
+JTAG tap: stm32.bs tap/device found: 0x06414041 (mfg: 0x020, part: 0x6414, ver: 0x0)
+
+
+Halt
+----
+
+Halt will stop the processor from executing.  It is recommended to
+halt the processor before connecting GDB so that the memory map is
+correctly conveyed to GDB.
+
+> halt
+target state: halted
+target halted due to debug-request, current mode: Thread 
+xPSR: 0x81000000 pc: 0x1ffff3ca msp: 0x200000c4
+
+STM32 Unlock
+------------
+
+CFA-735 modules come from Crystalfontz with the propriatery code
+protected by the STM32's read only protection (ROP).  In order to use
+your own code, the ROP must be disabled.  Disabling ROP will trigger a
+mass-erase of the STM32.  After unlocking, you can do a "reset init"
+so the new settings are used.
+
+> stm32x unlock 0
+Device Security Bit Set
+stm32x unlocked.
+INFO: a reset or power cycle is required for the new settings to take effect.
+
+Flash Write Image
+-----------------
+
+Flash Write Image loads code into the flash of the STM32.  Commonly it
+is used with the "erase" parameter to automattically erase the needed
+pages before programming.  This can only be done after the device has
+been unlocked.
+
+> flash write_image erase src/cfa735.elf
+auto erase enabled
+Padding image section 0 with 0 bytes
+wrote 20480 bytes from file src/cfa735.elf in 1.426481s (14.021 kb/s)

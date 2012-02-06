@@ -1,0 +1,120 @@
+This setup was performed on an x64 install of Ubuntu 10.04 LTS.  We
+have had development done on the CFA-735 on various versions of
+Fedora, Unbuntu, and Apple OS X.
+
+This walks through the steps needed to create a working directory for
+the cfa_735_simple user development and get the developement tools set
+up.
+
+Create a directory to contrain your repository and tools.
+
+$ mkdir cfa_735_development
+$ cd cfa_735_development
+
+Download and extract the recommended compiler into the working
+directory.
+
+$ wget https://sourcery.mentor.com/sgpp/lite/arm/portal/package8734/public/arm-none-eabi/arm-2011.03-42-arm-none-eabi-i686-pc-linux-gnu.tar.bz2
+$ tar xfj arm-2011.03-42-arm-none-eabi-i686-pc-linux-gnu.tar.bz2
+
+Configure the path so the arm-none-eabi-* tools can be found.
+
+$ export PATH=$PWD/arm-2011.03/bin:$PATH
+
+Clone the cfa_735_simple repository.
+
+$ git clone git://github.com/crystalfontz/cfa_735_simple.git
+
+Change to the respoitory's src directory in order to build.
+
+$ cd cfa_735_simple/src
+
+Build cfa735.elf
+
+$ make
+
+Now that you have the source and compiled firmware, you need to get
+the firmware on to the CFA-735 module.  This is done with OpenOCD and
+a JTAG interface adapter.
+
+The vendor for the JTAG adapter may provide a version of OpenOCD for
+your use, you may compile your own, or your distribution may have a
+version packaged for you.  For Ubuntu 10.04 the version of OpenOCD was
+a little out of date for our needs.  We downloaded the source of a
+version that worked for us.  Newer versions may work out of the box,
+YMMV.  Here is how to build the version we use if you desire.
+
+Change directory back to your top-level working directory.
+
+# if you are in cfa_735_simple/src
+$ cd ../..
+# or if you are outside of your working dir
+$ cd cfa_735_development
+
+Clone the OpenOCD repository.
+
+$ git clone git://openocd.git.sourceforge.net/gitroot/openocd/openocd
+
+Change directory the repository.
+
+$ cd openocd
+
+Tag the version we use for easy access.  Create a branch for your use
+of the tag and then check it out.
+
+$ git tag cf_version 56e74908d17d740db0a376f354c21e6608e8af8d
+$ git branch cf_working cf_version
+$ git checkout cf_working
+
+You will need the development header for libftdi for many of the JTAG
+adapters.  Under Ubuntu you can install that with apt-get.  Other
+distributions are an exercise for the user.
+
+$ sudo apt-get install libftdi-dev
+
+Build the autotools scripts for openocd in order to compile it for
+your platform.  Configure and then build for your platform.
+Configuring the build enables use of libftdi and sets the install
+directory.  We wanr the install in a directory call ocd under
+cfa_735_development (parallel to the openocd source).
+
+$ ./bootstrap
+$ ./configure --enable-maintainer-mode --enable-ft2232_libftdi --prefix=$PWD/../ocd
+$ make install
+
+OpenOCD should now be installed in cfa_735_development/ocd.
+
+OpenOCD is a daemon for communicating with a JTAG interface.  It
+exposes two TCP/IP ports that are useful to us: one port for a telnet
+command line interface (port 4444) and another port for a gdb remote
+interface (port 3333).
+
+Return to the cfa_735_simple repository directory.
+
+$ cd ../cfa_735_simple
+
+To start the daemon while using the Olimex ARM-USB-OCD adapter you can
+use the supplied configuration.
+
+$ ../ocd/bin/openocd -f olimex.cfg
+
+If you open another terminal window, you can telnet to the daemon and
+control the STM32F103.
+
+$ telnet localhost 4444
+
+Some of the useful command are documented in USING.openocd.
+
+You can use GDB also to communicate with OpenOCD.  Included is a
+script to get GDB communicating with OpenOCD.
+
+$ arm-none-eabi-gdb -x gdb-remote-prep.gdb src/cfa735.elf
+
+Useful commands for GDB are included in USING.gdb.
+
+Both of those USING.* files contain the steps to unlock and mass erase
+the STM32F103 in order to install your own code.
+
+Enjoy!
+
+

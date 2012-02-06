@@ -37,6 +37,23 @@ Crystalfontz firmware on a CFA-735 without returning the module to
 Crystalfontz.
 
 
+Documentation
+-------------
+
+docs/SETUP.Linux - Provides a walkthrough for getting started.
+
+docs/README.jtag - How-to get the a JTAG adapter to work on a module
+  with JTAG disabled.
+
+docs/USING.gdb - how to run GDB and some useful commands.
+
+docs/USING.openocd - how to connect to openocd using the telnet
+  interface and useful commands on the telent and monitor interface.
+
+docs/CFA-735_User-Code_Pins.* - pin list to signal use for developers
+  wishing to use all the available functions of the STM32.
+
+
 Recommended compiler
 --------------------
 

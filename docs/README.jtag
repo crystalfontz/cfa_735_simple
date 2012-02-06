@@ -1,0 +1,14 @@
+Initial JTAG Connection
+-----------------------
+
+The proprietary firmware is locked into the chip and the JTAG port is
+disabled in order to utilize those pins for our functions.  In some
+cases with the proprietary firmware the JTAG may not be accesible.
+You may need to power cycle the CFA-735 while holding the BOOT0 line
+high.  In order to do that, hold a 10kOhm resistor between V+ and
+BOOT0 on the BOOT connector while powering the module.  (The BOOT
+connector pins are located along the bottom edge of the back of
+module.)  That will put the module into the STM32 bootloader mode
+instead of running the propriatary code.  In the bootloader the JTAG
+remains enabled, allowing you to connect to the on-chip debugger.
+
