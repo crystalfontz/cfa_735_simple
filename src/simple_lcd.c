@@ -93,13 +93,14 @@ void RenderNumber(unsigned int x, unsigned int y, uint32_t num)
     unsigned int i = 10;
     char s[11];
     s[10] = '\0';
-    while (i && num)
+    do
     {
         unsigned int a = num%10;
         --i;
         s[i] = hex_map[a];
         num /= 10;
     }
+    while (i && num);
     RenderString(x, y, &s[i]);
 }
 
