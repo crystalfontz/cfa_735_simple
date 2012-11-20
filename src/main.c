@@ -26,16 +26,20 @@
 #include "stm32f10x.h"
 #include "platform_config.h"
 #include "systick.h"
-#include "simple_lcd.h"
+#include "lcd.h"
 #include "keys.h"
 #include "leds.h"
 #include "uart.h"
 #include "usb_vcom.h"
 #include "ring_buffer.h"
+#include "08x08fnt.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include "process_cmd.h"
 
 /* forward declarations */
 void SetupInterruptVectors(void);
@@ -48,9 +52,7 @@ void ShowUSBData(unsigned int y);
 void SendKeysToUSB(uint16_t key_state);
 void WalkLEDs(unsigned int walk_inc_count);
 
-
-/* main loop */
-int main(void)
+void main_init(void)
 {
     /* clocks are set up on entry by the stm32 startup code */
 
@@ -64,7 +66,7 @@ int main(void)
     PushBuffer();
 
     /* light the keys */
-    KeyBacklightOn(1);
+    KeyBacklightOn(0);
 
     /* init the LED pins */
     LEDsInit();
@@ -81,24 +83,37 @@ int main(void)
     USB_VCOMinit();
 
     /* render a banner */
-    RenderString( 10, 0, "CFA-735 User Code");
+    extern unsigned short start_screen[];
+    //RenderScreen((uint16_t*)start_screen);
 
-    /* loop forever doing buffered I/O, walking LEDs, and monitoring the keys */
-    while (1)
-    {
-        uint16_t key_state = ReadKeys();
+    PushBuffer();
+}
 
-        ShowUSBData(30);
-        SendKeysToUSB(key_state);
+static uint8_t rx_buffer[1024];
+static unsigned int rx_buffer_size;
+static unsigned int led_toggle_start;
+extern uint32_t stat_uart_irq;
+extern uint32_t stat_uart_tx;
+extern uint32_t stat_uart_rx;
+/* main loop */
+int main(void)
+{
+	unsigned int size;
 
-        ShowH1UARTData(40);
-        SendKeysToH1UART(key_state);
+	main_init();
+	rx_buffer_size = 0;
 
-        ShowKeys(key_state, 50);
-
-        PushBuffer();
-        LEDsWalk(10);
-    }
+	while (1)
+	{
+		size = sizeof(rx_buffer);
+		size = USB_VCOMread(size-rx_buffer_size, &rx_buffer[rx_buffer_size]);
+		if (size > 0)
+		{
+			rx_buffer_size += size;
+			process_command(rx_buffer, &rx_buffer_size);
+		}
+		PushBuffer();
+	}
 }
 
 /* display the data received on the serial port and scroll it as it comes in */
@@ -238,7 +253,7 @@ void assert_failed(uint8_t* file, uint32_t line)
 }
 #endif
 
-/* simple memset implementation so a stndard library is not required */
+/* simple memset implementation so a standard library is not required */
 void *memset(void *s, int c, unsigned int n)
 {
     char* t = (char*)s;
@@ -247,8 +262,16 @@ void *memset(void *s, int c, unsigned int n)
     return s;
 }
 
-/* simple memcpy implementation so a stndard library is not required */
+/* simple memcpy implementation so a standard library is not required */
 void *memcpy(void *d, const void *s, size_t n)
+{
+    while(n--)
+        *((char*)d++) = *((char*)s++);
+    return d;
+}
+
+/* simple memmove implementation so a standard library is not required */
+void *memmove(void *d, const void *s, size_t n)
 {
     while(n--)
         *((char*)d++) = *((char*)s++);
