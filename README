@@ -2,6 +2,8 @@ Introduction
 --------------------------------------------------------------
 Fork of https://github.com/crystalfontz/cfa_735_simple 
 Original author http://rob.emanuele.us/ 
+Most updated version git@git.assembla.com:mbvideo.lcd.git 
+Support separate bootloader and application, allows remote upgrade of the firmware.
 
 The firmware running on the LCD provides partially compatible with original CrystalFontz API. 
 There are 35 commands in total documented in the CFA-735-xxx-KT_Data_Sheet. 
