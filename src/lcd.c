@@ -24,7 +24,7 @@
 #include "st7529_core.h"
 #include "glassLayout.h"
 #include "platform_config.h"
-#include "simple_lcd.h"
+#include "lcd.h"
 #include "stm32f10x.h"
 #include <string.h>
 #include "08x08fnt.h"
@@ -35,8 +35,6 @@ static const char hex_map[16] = {'0','1','2','3','4','5','6','7','8', '9','a','b
 /* the framebuffer memory */
 static uint8_t buffer[LCD_BUFFER_BYTE_CNT];
 
-/* function define for a 8x8 bitmap (1 bit/pixel) render, used for characters */
-static void Render(const uint8_t bitmap[8], unsigned int x, unsigned int y);
 
 /* itialize the controller and display */
 void LCDInit(void)
@@ -120,8 +118,88 @@ void RenderString(unsigned int x, unsigned int y, const char* string)
     }
 }
 
+/* render a c string at x,y */
+void RenderString90(unsigned int x, unsigned int y, const char* string)
+{
+    while (*string != '\0')
+    {
+        char c = *string;
+        if (c < FONT_08X08_BASE || c > 148)
+            c = ' ';
+
+        Render90( Font_Cyrillic_08x08[32], x, y);
+        Render90( Font_Cyrillic_08x08[(unsigned int)c], x, y);
+
+        x+=8;
+        ++string;
+    }
+}
+
 /* render an 8x8 bitmap (a character in 1bpp) at x,y */
-static void Render(const uint8_t bitmap[8], unsigned int x, unsigned int y)
+void RenderScreen(const uint16_t *bitmap)
+{
+    uint8_t* fb = buffer;
+    int bit;
+    int pixels = 0;
+
+    memset(buffer, 0, sizeof(buffer));
+
+
+    while (fb < &(buffer[LCD_BUFFER_BYTE_CNT]))
+    {
+		bit = 0;
+		while (bit < 16)
+		{
+            uint8_t val;
+            val = (*bitmap >> bit);
+            val &= 0x01;
+            *fb = val ? 0xff:0x00;
+            fb++;
+            bit++;
+    		pixels++;
+            if (pixels >= 244)
+            {
+            	pixels = 0;
+            	bit = 0;
+            	bitmap++;
+            }
+
+		}
+		bitmap++;
+    }
+}
+
+/* negate 8x8 symbol at x,y */
+void RenderNegate(unsigned int x, unsigned int y)
+{
+    uint8_t* fb = buffer + (y * LCD_USABLE_PIXELS_PER_ROW + x);
+
+    unsigned int top, bottom;
+    unsigned int left, right;
+
+    top = 8;
+    bottom = 0;
+
+    do
+    {
+        --top;
+        left = 0;
+        right = 8;
+
+        do
+        {
+            *fb = ~(*fb);
+            fb++;
+
+            ++left;
+        } while (left != right);
+        fb += LCD_USABLE_PIXELS_PER_ROW - 8;
+
+    } while (top != bottom);
+}
+
+/* render an 8x8 bitmap (a character in 1bpp) at x,y */
+void Render(const uint8_t bitmap[8], unsigned int x, unsigned int y)
 {
     uint8_t* fb = buffer + (y * LCD_USABLE_PIXELS_PER_ROW + x);
 
@@ -153,4 +231,39 @@ static void Render(const uint8_t bitmap[8], unsigned int x, unsigned int y)
         fb += LCD_USABLE_PIXELS_PER_ROW - 8;
 
     } while (top != bottom);
+}
+
+/* render an 8x8 bitmap (a character in 1bpp) at x,y turned by 90 degrees */
+void Render90(const uint8_t bitmap[8], unsigned int x, unsigned int y)
+{
+    uint8_t* fb = buffer + (y * LCD_USABLE_PIXELS_PER_ROW + x);
+
+    unsigned int top, bottom;
+    unsigned int left, right;
+
+
+    left = 0;
+    right = 8;
+    do
+    {
+
+        top = 0;
+        bottom = 8;
+        do
+        {
+            uint8_t val;
+            val = (bitmap[left]<<top);
+            val &= 0x80;
+
+            if (fb >= &(buffer[LCD_BUFFER_BYTE_CNT]))
+                return;
+            *fb = val?0xff:0x00;
+            fb++;
+            top++;
+
+        } while (top != bottom);
+        fb += LCD_USABLE_PIXELS_PER_ROW - 8;
+        ++left;
+
+    } while (left != right);
 }

@@ -82,9 +82,13 @@ static void initInterruptController()
     NVIC_Init(&NVIC_InitStructure);
 }
 
+uint32_t stat_uart_irq;
+uint32_t stat_uart_tx;
+uint32_t stat_uart_rx;
 /* Call the applications call back on interrupt */
 void H1UART_HANDLER(void)
 {
+	stat_uart_irq++;
     if (USART_GetFlagStatus(H1UART, USART_FLAG_TXE))
     {
         uint8_t byte;
@@ -101,6 +105,7 @@ void H1UART_HANDLER(void)
     if (USART_GetFlagStatus(H1UART, USART_FLAG_RXNE))
     {
         uint8_t byte = USART_ReceiveData(H1UART);
+        stat_uart_rx++;
         PutDataInRing(&rx_ring, 1, &byte);
     }
 }
@@ -191,7 +196,9 @@ int UARTinit()
 /* read as much data as available data from the ring into the provided buffer */
 unsigned int UARTread(unsigned int size, void* buffer)
 {
-    return GetDataFromRing(&rx_ring, size, (uint8_t*)buffer);
+    unsigned int ret = GetDataFromRing(&rx_ring, size, (uint8_t*)buffer);
+
+    return ret;
 }
 
 /* write the data in buffer into the ring and enable the interrupt to transfer it */

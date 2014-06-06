@@ -1,0 +1,75 @@
+Introduction
+--------------------------------------------------------------
+Fork of https://github.com/crystalfontz/cfa_735_simple 
+Original author http://rob.emanuele.us/ 
+Most updated version git://git.assembla.com/mbvideo.lcd.git
+Support separate bootloader and application, allows remote upgrade of the firmware.
+
+The firmware running on the LCD provides partially compatible with original CrystalFontz API. 
+There are 35 commands in total documented in the CFA-735-xxx-KT_Data_Sheet. 
+This part of README file covers extensions for the command set and changes in the command set.
+
+Not supported commands:
+
+*  2 (0x02): Write User Flash Area - not supported
+*  3 (0x03): Read User Flash Area - not supported
+*  4 (0x04): Store Current State As Boot State - not supported
+*  5 (0x05): Reset Functions - not supported
+*  16 (0x10): Set Up Fan Reporting (FBSCAB required) - not supported
+*  17 (0x11): Set Fan Power (FBSCABrequired)
+*  18 (0x12): Read DOW Device Information (FBSCAB required)
+*  19 (0x13): Set Up Temperature Reporting (FBSCAB required)
+*  20 (0x14): Arbitrary DOW Transaction (FBSCAB required)
+*  25 (0x19): Set Fan Power Fail-Safe (FBSCAB required)
+*  26 (0x1A): Set Fan Tachometer Glitch Filter (FBSCAB required)
+*  27 (0x1B): Query Fan Power & Fail-Safe Mask (FBSCAB required)
+*  28 (0x1C): Set ATX Power Switch Functionality
+*  29 (0x1D): Enable/Disable and Reset the Watchdog
+
+Modified commands:
+
+
+*  9 (0x09): Set LCD Special Character Data
+
+First byte of the payload - index of the special character. The legal value for the index is 0-255.
+The command will store the characters in the RAM
+
+*  31 (0x1F): Send Data to LCD
+Payload bytes [2-21] contains codes of the characters. 
+The default characters table follows the Figure 25, but instead of English ABC there are Cyrillic letters. 
+For encoding in the current source code see http://en.wikipedia.org/wiki/CP866
+
+
+HowTo 
+--------------------------------------------------------------
+
+ Prerequisites.
+   
+*  STMLink v2 or similar
+*  Open OCD
+*  ST-LINK In-circuit debugger and programmer for STM8 and STM32 MCUs  (download from http://www.st.com/internet/evalboard/product/219866.jsp)
+*  Linux, Windows
+*  Optional LCDProc
+
+  Preparations.
+  
+1. Connect JTAG
+2. Bring up the ST-LINK (runs only Windows)
+3. Keep the reset pin on the H1 connector low. Connect the ping to the ground if needed, but do not solder.
+4. From ST-LINK utility reset the card and disable write protect (menu options byte)
+5. Erase the FLASH (this is probably a good idea to save the original LCD firmware first)
+
+The card is ready for the custom firmware
+
+  Compilation and programming
+   
+1. Open the JTAG device using OpenOCD: sudo ../src/openocd  -f board/stm32vldiscovery.cfg
+2. Open telnet: telnet localhost 4444 
+3. Compile the firmware make -C ./src all
+4. In the telnet: reset halt;flash write_image erase ./cfa735.elf.hex;reset
+5. In the telnet: reset 
+6. Compile CFA735 tests: cd test; make
+7. Run the test: ./example-635 /dev/ttyACM0 115200. You should see 4 text lines on the LCD screen
+
+  
+

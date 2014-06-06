@@ -19,9 +19,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-TARGET=arm-none-eabi
+#TARGET=arm-none-eabi
+TARGET=arm-linux-gnueabi
 CC=$(TARGET)-gcc
+OBJDUMP=$(TARGET)-objdump
+OBJCOPY=$(TARGET)-objcopy
 
 ST_SOURCES_CORE = STM32_USB-FS-Device_Lib/Libraries/CMSIS/CM3/CoreSupport/core_cm3.c
 ST_SOURCES_DEVICE = STM32_USB-FS-Device_Lib/Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x/system_stm32f10x.c
@@ -63,13 +65,14 @@ ST_SOURCES_USB = STM32_USB-FS-Device_Lib/Libraries/STM32_USB-FS-Device_Driver/sr
 
 
 ST_SOURCES = $(ST_SOURCES_CORE) $(ST_SOURCES_DEVICE) $(ST_SOURCES_PERIPH) $(ST_SOURCES_USB)
-CF_SOURCES = main.c simple_lcd.c st7529_core.c systick.c keys.c leds.c ring_buffer.c uart.c 08x08fnt.c usb_desc.c usb_interrupt.c usb_istr.c usb_prop.c usb_pwr.c usb_pwr_modes.c usb_vcom.c
+CF_SOURCES = main.c process_cmd.c start_screen.c lcd.c st7529_core.c systick.c keys.c leds.c ring_buffer.c uart.c 08x08fnt.c usb_desc.c usb_interrupt.c usb_istr.c usb_prop.c usb_pwr.c usb_pwr_modes.c usb_vcom.c
 LDSCRIPT = linker_scripts/whole_chip.ld
 
 INCLUDES = -ISTM32_USB-FS-Device_Lib/Libraries/CMSIS/CM3/CoreSupport \
 	-ISTM32_USB-FS-Device_Lib/Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x \
 	-ISTM32_USB-FS-Device_Lib/Libraries/STM32F10x_StdPeriph_Driver/inc \
 	-ISTM32_USB-FS-Device_Lib/Libraries/STM32_USB-FS-Device_Driver/inc \
+	-Ipt-1.4 \
 	-I.
 
 
@@ -77,14 +80,27 @@ INCLUDES = -ISTM32_USB-FS-Device_Lib/Libraries/CMSIS/CM3/CoreSupport \
 # The code is built for a ARM Cortex M3 (Thumb2), unoptimized with functions and data sectioned for unused section garbage collection at link time.
 SOURCES = $(ST_SOURCES) $(CF_SOURCES)
 OPTIM = -O0
-CCFLAGS = -fdata-sections -ffunction-sections -Wall -D USE_CFA_735_V0_9 -D STM32F10X_HD -D HSE_VALUE=16000000 -D USE_STDPERIPH_DRIVER -mcpu=cortex-m3 -mthumb -Wcast-align $(OPTIM) -fomit-frame-pointer -ggdb $(INCLUDES)
+CCFLAGS =  -fno-stack-protector -fdata-sections -ffunction-sections -Wall -D USE_CFA_735_V0_9 -D STM32F10X_HD -D HSE_VALUE=16000000 -D USE_STDPERIPH_DRIVER -mcpu=cortex-m3 -mthumb -Wcast-align $(OPTIM) -fomit-frame-pointer -ggdb $(INCLUDES)
 LINKFLAGS = -T$(LDSCRIPT) -Xlinker --gc-sections -Xlinker -M -Xlinker -Map=$@.map -nostdlib $(CCFLAGS)
 
 cfa735.elf: $(SOURCES:.c=.o) $(ST_STARTUP)
 	$(CC) $(LINKFLAGS) -o $@ $^
 
+cfa735.elf.asm: cfa735.elf
+	$(OBJDUMP) -D $^ > $@
+
+REMOVE_SECTION=.note.gnu.build-id
+cfa735.elf.hex: cfa735.elf
+	$(OBJCOPY)  -O srec --strip-debug $(foreach rs, $(REMOVE_SECTION), --remove-section $(rs)) $^  $@
+
+cfa735.elf.sections: cfa735.elf
+	$(OBJDUMP)  -h   $^  > $@
+
+all: cfa735.elf cfa735.elf.asm cfa735.elf.hex cfa735.elf.sections 
+	
+
 clean:
-	rm -v $(SOURCES:.c=.o) $(SOURCES:.c=.P) cfa735.elf cfa735.elf.map
+	rm -v $(SOURCES:.c=.o) $(SOURCES:.c=.P) cfa735.elf cfa735.elf.*
 
 
 %.o : %.c

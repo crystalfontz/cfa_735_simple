@@ -26,16 +26,20 @@
 #include "stm32f10x.h"
 #include "platform_config.h"
 #include "systick.h"
-#include "simple_lcd.h"
+#include "lcd.h"
 #include "keys.h"
 #include "leds.h"
 #include "uart.h"
 #include "usb_vcom.h"
 #include "ring_buffer.h"
+#include "08x08fnt.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include "process_cmd.h"
 
 /* forward declarations */
 void SetupInterruptVectors(void);
@@ -49,8 +53,7 @@ void SendKeysToUSB(uint16_t key_state);
 void WalkLEDs(unsigned int walk_inc_count);
 
 
-/* main loop */
-int main(void)
+void main_init(void)
 {
     /* clocks are set up on entry by the stm32 startup code */
 
@@ -64,7 +67,7 @@ int main(void)
     PushBuffer();
 
     /* light the keys */
-    KeyBacklightOn(1);
+    KeyBacklightOn(0);
 
     /* init the LED pins */
     LEDsInit();
@@ -81,24 +84,150 @@ int main(void)
     USB_VCOMinit();
 
     /* render a banner */
-    RenderString( 10, 0, "CFA-735 User Code");
+    extern unsigned short start_screen[];
+    //RenderScreen((uint16_t*)start_screen);
 
-    /* loop forever doing buffered I/O, walking LEDs, and monitoring the keys */
-    while (1)
-    {
-        uint16_t key_state = ReadKeys();
+    PushBuffer();
+}
 
-        ShowUSBData(30);
-        SendKeysToUSB(key_state);
 
-        ShowH1UARTData(40);
-        SendKeysToH1UART(key_state);
+#define KEY_UP_PRESS 1
+#define KEY_DOWN_PRESS 2
+#define KEY_LEFT_PRESS 3
+#define KEY_RIGHT_PRESS 4
+#define KEY_ENTER_PRESS 5
+#define KEY_EXIT_PRESS 6
+#define KEY_UP_RELEASE 7
+#define KEY_DOWN_RELEASE 8
+#define KEY_LEFT_RELEASE 9
+#define KEY_RIGHT_RELEASE 10
+#define KEY_ENTER_RELEASE 11
+#define KEY_EXIT_RELEASE 12
 
-        ShowKeys(key_state, 50);
+#define PRINT_KEYS 0
 
-        PushBuffer();
-        LEDsWalk(10);
-    }
+uint16_t main_key_state_current;
+
+static void send_keys(void)
+{
+	static const int event_press[] = {KEY_UP_PRESS, KEY_DOWN_PRESS, KEY_LEFT_PRESS, KEY_RIGHT_PRESS, KEY_ENTER_PRESS, KEY_EXIT_PRESS};
+	static const int event_release[] = {KEY_UP_RELEASE, KEY_DOWN_RELEASE, KEY_LEFT_RELEASE, KEY_RIGHT_RELEASE, KEY_ENTER_RELEASE, KEY_EXIT_RELEASE};
+#if (PRINT_KEYS == 1)
+	static const char *const event_name[] = {
+				"NONE         ", "UP_PRESS     ", "DOWN_PRESS   ", "LEFT_PRESS   ", "RIGHT_PRESS  ", "ENTER_PRESS  ", "EXIT_PRESS   ",
+				"UP_RELEASE   ", "DOWN_RELEASE ", "LEFT_RELEASE ", "RIGHT_RELEASE", "ENTER_RELEASE", "EXIT_RELEASE "
+	};
+#endif
+
+	uint16_t key_state_current;
+	static uint16_t key_state_last;
+	uint16_t key_state_changed;
+	int mask, bit;
+	uint8_t buffer[16];
+
+	key_state_current = ReadKeys();
+	main_key_state_current = key_state_current;
+	key_state_changed = key_state_last ^ key_state_current;
+
+	for (bit = 0;bit < 16;bit++)
+	{
+		mask = 1 << bit;
+		if (key_state_changed & mask)
+		{
+			int event;
+			if (key_state_current & mask)
+				event = event_press[bit];
+			else
+				event = event_release[bit];
+
+			buffer[COMMAND_ID_OFFSET] = 0x80;
+			buffer[PAYLOAD_OFFSET] = event;
+			cmd_send_report(buffer, 3);
+#if (PRINT_KEYS == 1)
+			RenderString90(0, 20, event_name[event]);
+			return;
+#endif
+		}
+	}
+
+	key_state_last = key_state_current;
+}
+
+static int main_cursor_x = 0;
+static int main_cursor_y = 0;
+static int main_cursor_negated = 0;
+static int main_cursor_enable = 0;
+
+void main_move_cursor(int x, int y)
+{
+	if (main_cursor_negated)
+	{
+		RenderNegate(main_cursor_x, main_cursor_y);
+	}
+	main_cursor_negated = 0;
+	main_cursor_x = x;
+	main_cursor_y = y;
+}
+
+static void main_toggle_cursor(void)
+{
+	if (main_cursor_enable)
+	{
+		RenderNegate(main_cursor_x, main_cursor_y);
+		main_cursor_negated = !main_cursor_negated;
+	}
+}
+
+void main_set_cursor_mode(int mode)
+{
+	if (main_cursor_negated)
+	{
+		RenderNegate(main_cursor_x, main_cursor_y);
+	}
+	main_cursor_negated = 0;
+	switch (mode)
+	{
+		case 0:
+		main_cursor_enable = 0;
+		break;
+
+		case 1:
+		main_cursor_enable = 1;
+		break;
+	}
+}
+
+static uint8_t rx_buffer[1024];
+static unsigned int rx_buffer_size;
+extern uint32_t stat_uart_irq;
+extern uint32_t stat_uart_tx;
+extern uint32_t stat_uart_rx;
+/* main loop */
+int main(void)
+{
+	unsigned int size;
+	int loops;
+
+	main_init();
+	rx_buffer_size = 0;
+
+	while (1)
+	{
+		send_keys();
+		size = sizeof(rx_buffer);
+		size = USB_VCOMread(size-rx_buffer_size, &rx_buffer[rx_buffer_size]);
+		if (size > 0)
+		{
+			rx_buffer_size += size;
+			process_command(rx_buffer, &rx_buffer_size);
+		}
+		if ((++loops & 0x0F) == 0)
+		{
+			main_toggle_cursor();
+		}
+
+		PushBuffer();
+	}
 }
 
 /* display the data received on the serial port and scroll it as it comes in */
@@ -238,7 +367,7 @@ void assert_failed(uint8_t* file, uint32_t line)
 }
 #endif
 
-/* simple memset implementation so a stndard library is not required */
+/* simple memset implementation so a standard library is not required */
 void *memset(void *s, int c, unsigned int n)
 {
     char* t = (char*)s;
@@ -247,8 +376,16 @@ void *memset(void *s, int c, unsigned int n)
     return s;
 }
 
-/* simple memcpy implementation so a stndard library is not required */
+/* simple memcpy implementation so a standard library is not required */
 void *memcpy(void *d, const void *s, size_t n)
+{
+    while(n--)
+        *((char*)d++) = *((char*)s++);
+    return d;
+}
+
+/* simple memmove implementation so a standard library is not required */
+void *memmove(void *d, const void *s, size_t n)
 {
     while(n--)
         *((char*)d++) = *((char*)s++);

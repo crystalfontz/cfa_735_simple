@@ -59,6 +59,7 @@ static unsigned int unsafeGetDataFromRing(struct RingBuffer* ring, unsigned int 
 {
     unsigned int bytes;
     unsigned int avail = iGetRemaining(ring);
+
     if (size > avail)
         size = avail;
 
@@ -131,6 +132,7 @@ unsigned int GetDataFromRing(struct RingBuffer* ring, unsigned int size, uint8_t
     __disable_irq();
     ret = unsafeGetDataFromRing(ring, size, buffer);
     __enable_irq();
+
     return ret;
 }
 
